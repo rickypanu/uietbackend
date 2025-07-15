@@ -1,17 +1,84 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.core.config import ADMIN_ID, ADMIN_PASSWORD
+from app.core.config import ADMIN_ID, ADMIN_PASSWORD, ADMIN_EMAIL, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
 from app.db.database import (
     pending_students, approved_students, rejected_students,
     pending_teachers, approved_teachers, rejected_teachers
 )
 from app.core.email_utils import send_email
+from datetime import datetime, timedelta
+from jose import jwt
+import random
+from fastapi import Depends, Request
+from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter()
+
+# TEMPORARY: in-memory; use Redis/DB in production
+admin_otp_store = {}
 
 class AdminLogin(BaseModel):
     user_id: str
     password: str
+
+class OtpVerify(BaseModel):
+    user_id: str
+    otp: str
+
+@router.post("/admin/request-otp")
+def admin_request_otp(data: AdminLogin):
+    if data.user_id != ADMIN_ID or data.password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid admin credentials")
+    
+    otp = str(random.randint(100000, 999999))
+    expires = datetime.utcnow() + timedelta(minutes=2)
+    admin_otp_store[data.user_id] = {"otp": otp, "expires": expires}
+
+    subject = "Your Admin Login OTP"
+    message = f"""
+    Hello Admin,
+    Your OTP to login to the Admin Dashboard is: {otp}
+    It is valid for 2 minutes.
+    
+    If you did not request this, please contact support immediately.
+    - College Attendance System
+    """
+
+    send_email(ADMIN_EMAIL, subject, message)
+    return {"message": "OTP sent to admin email"}
+
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+@router.post("/admin/verify-otp")
+def admin_verify_otp(data: OtpVerify):
+    record = admin_otp_store.get(data.user_id)
+    if not record:
+        raise HTTPException(status_code=400, detail="No OTP requested")
+    if datetime.utcnow() > record["expires"]:
+        raise HTTPException(status_code=400, detail="OTP expired")
+    if record["otp"] != data.otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    # OTP valid → delete it
+    del admin_otp_store[data.user_id]
+
+    access_token = create_access_token({"sub": data.user_id})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="admin/verify-otp")
+
+def verify_admin_token(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("sub") != ADMIN_ID:
+            raise HTTPException(status_code=403, detail="Invalid admin token")
+    except Exception:
+        raise HTTPException(status_code=403, detail="Invalid admin token")
     
 @router.post("/admin/login")
 def admin_login(data: AdminLogin):
@@ -20,7 +87,8 @@ def admin_login(data: AdminLogin):
     return {"message": "Admin login successful"}
 
 @router.post("/admin/approve/student/{roll_no}")
-def approve_student(roll_no: str):
+
+def approve_student(roll_no: str, token: str = Depends(verify_admin_token)):
     student = pending_students.find_one({"roll_no": roll_no})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -45,7 +113,7 @@ def approve_student(roll_no: str):
     return {"message": "Student approved"}
 
 @router.post("/admin/reject/student/{roll_no}")
-def reject_student(roll_no: str):
+def reject_student(roll_no: str, token: str = Depends(verify_admin_token)):
     student = pending_students.find_one({"roll_no": roll_no})
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -71,7 +139,7 @@ def reject_student(roll_no: str):
 
 # same for teacher
 @router.post("/admin/approve/teacher/{employee_id}")
-def approve_teacher(employee_id: str):
+def approve_teacher(employee_id: str, token: str = Depends(verify_admin_token)):
     emp_id = employee_id.upper()
     teacher = pending_teachers.find_one({"employee_id": emp_id})
     if not teacher:
@@ -97,7 +165,7 @@ def approve_teacher(employee_id: str):
     return {"message": "Teacher approved"}
 
 @router.post("/admin/reject/teacher/{employee_id}")
-def reject_teacher(employee_id: str):
+def reject_teacher(employee_id: str, token: str = Depends(verify_admin_token)):
     emp_id = employee_id.upper()
     teacher = pending_teachers.find_one({"employee_id": emp_id})
     if not teacher:
