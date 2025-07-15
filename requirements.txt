@@ -5,3 +5,4 @@ python-dotenv
 email-validator
 uvicorn
 pytz
+jose
