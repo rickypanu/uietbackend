@@ -17,11 +17,22 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 URL = os.getenv("url")
 
 
-SUBJECTS = [
-    "EMT", "VLSI", "DSA", "CE",
-    "DSP", "Analog Electronics",
-    "MICROPROCESSOR", "Communication Systems",
-    "NETWORKS", "AI"
-]
+SUBJECTS = {
+    "CSE": {
+        "1": ["Maths", "Physics"],
+        "2": ["DSA", "OOP"],
+        "3": ["DBMS", "OS"],
+    },
+    "ECE": {
+        "1": ["Basic Electronics", "Maths"],
+        "2": ["EMT", "Digital"],
+        "3": ["DSP", "VLSI"],
+    },
+    "MECH": {
+        "1": ["Mechanics", "Maths"],
+        "2": ["Thermodynamics", "Fluid Mechanics"],
+    },
+}
+
 
 

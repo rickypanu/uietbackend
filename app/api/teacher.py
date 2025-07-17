@@ -10,23 +10,41 @@ from io import StringIO
 import csv
 import pytz
 
+
 class GenerateOtpRequest(BaseModel):
     employee_id: str
+    branch: str
+    semester: str
     subject: str
     duration_minutes: int
     lat: float
     lng: float
+
 
 router = APIRouter()
 
 # Timezone definitions
 IST = pytz.timezone('Asia/Kolkata')
 
+@router.get("/teacher/subjects/{branch}/{semester}")
+def get_subjects(branch: str, semester: str):
+    branch = branch.upper()
+    semester = semester.title()
+    if branch not in SUBJECTS:
+        raise HTTPException(status_code=404, detail="Branch not found")
+    if semester not in SUBJECTS[branch]:
+        raise HTTPException(status_code=404, detail="Semester not found in this branch")
+    return SUBJECTS[branch][semester]
+
 @router.post("/teacher/generate-otp")
 def generate_otp_route(data: GenerateOtpRequest):
-    if data.subject not in SUBJECTS:
-        raise HTTPException(status_code=400, detail="Invalid subject")
-    
+    if (
+    data.branch not in SUBJECTS or
+    data.semester not in SUBJECTS[data.branch] or
+    data.subject not in SUBJECTS[data.branch][data.semester]
+    ):
+        raise HTTPException(status_code=400, detail="Invalid subject for given branch/semester")
+
     teacher = approved_teachers.find_one({"employee_id": data.employee_id.upper()})
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found")
@@ -38,19 +56,24 @@ def generate_otp_route(data: GenerateOtpRequest):
     end_time_utc = now_utc + timedelta(minutes=data.duration_minutes)
 
     otps.insert_one({
-        "otp": otp,
-        "subject": data.subject,
-        "teacher_id": data.employee_id.upper(),
-        "start_time": now_utc,
-        "end_time": end_time_utc,
-        "location": {"lat": data.lat, "lng": data.lng}
-    })
+    "otp": otp,
+    "teacher_id": data.employee_id.upper(),
+    "branch": data.branch,
+    "semester": data.semester,
+    "subject": data.subject,
+    "start_time": now_utc,
+    "end_time": end_time_utc,
+    "location": {"lat": data.lat, "lng": data.lng}
+})
+
 
     # Convert to IST for response
     end_time_ist = end_time_utc.astimezone(IST)
     return {
         "otp": otp,
         "subject": data.subject,
+        "branch": data.branch,
+        "semester": data.semester,
         "valid_till": end_time_ist.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
