@@ -94,8 +94,6 @@ def admin_login(data: AdminLogin):
 def approve_student(roll_no: str, admin_payload: dict = Depends(verify_admin_token)):
     # student = pending_students.find_one({"roll_no": roll_no})
     student = pending_students.find_one({"roll_no": {"$regex": f"^{roll_no}$", "$options": "i"}})
-    print(f"Student record: {student}")
-    print(f"Attempting to approve student: {roll_no}")
 
 
     if not student:
