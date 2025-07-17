@@ -22,11 +22,13 @@ SUBJECTS = {
         "1": ["Maths", "Physics"],
         "2": ["DSA", "OOP"],
         "3": ["DBMS", "OS"],
+        "5": ["Computer Graphics", "Theory of Computation", "Artificial Intelligence", "Natural language Processing","Economics"],
     },
     "ECE": {
         "1": ["Basic Electronics", "Maths"],
         "2": ["EMT", "Digital"],
         "3": ["DSP", "VLSI"],
+        "5": ["VLSI", "AWP","DSD","DSA", "DSP", "CN"],
     },
     "MECH": {
         "1": ["Mechanics", "Maths"],
