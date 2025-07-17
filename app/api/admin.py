@@ -11,11 +11,12 @@ from jose import jwt
 import random
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-
+import os
 router = APIRouter()
 
 # TEMPORARY: in-memory; use Redis/DB in production
 admin_otp_store = {}
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 class AdminLogin(BaseModel):
     user_id: str
@@ -31,17 +32,17 @@ def admin_request_otp(data: AdminLogin):
         raise HTTPException(status_code=401, detail="Invalid admin credentials")
     
     otp = str(random.randint(100000, 999999))
-    expires = datetime.utcnow() + timedelta(minutes=2)
+    expires = datetime.utcnow() + timedelta(minutes=5)
     admin_otp_store[data.user_id] = {"otp": otp, "expires": expires}
 
     subject = "Your Admin Login OTP"
     message = f"""
     Hello Admin,
     Your OTP to login to the Admin Dashboard is: {otp}
-    It is valid for 2 minutes.
-    
+    It is valid for 5 minutes.
     If you did not request this, please contact support immediately.
-    - College Attendance System
+    Regards
+    Geeky_coders
     """
 
     send_email(ADMIN_EMAIL, subject, message)
@@ -75,10 +76,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="admin/verify-otp")
 def verify_admin_token(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload.get("sub") != ADMIN_ID:
+        if payload.get("sub").lower() != ADMIN_ID.lower():
             raise HTTPException(status_code=403, detail="Invalid admin token")
+        return payload  # ✅ This was missing
     except Exception:
         raise HTTPException(status_code=403, detail="Invalid admin token")
+
     
 @router.post("/admin/login")
 def admin_login(data: AdminLogin):
@@ -88,8 +91,13 @@ def admin_login(data: AdminLogin):
 
 @router.post("/admin/approve/student/{roll_no}")
 
-def approve_student(roll_no: str, token: str = Depends(verify_admin_token)):
-    student = pending_students.find_one({"roll_no": roll_no})
+def approve_student(roll_no: str, admin_payload: dict = Depends(verify_admin_token)):
+    # student = pending_students.find_one({"roll_no": roll_no})
+    student = pending_students.find_one({"roll_no": {"$regex": f"^{roll_no}$", "$options": "i"}})
+    print(f"Student record: {student}")
+    print(f"Attempting to approve student: {roll_no}")
+
+
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     pending_students.delete_one({"roll_no": roll_no})
@@ -113,8 +121,10 @@ def approve_student(roll_no: str, token: str = Depends(verify_admin_token)):
     return {"message": "Student approved"}
 
 @router.post("/admin/reject/student/{roll_no}")
-def reject_student(roll_no: str, token: str = Depends(verify_admin_token)):
-    student = pending_students.find_one({"roll_no": roll_no})
+def reject_student(roll_no: str, admin_payload: dict = Depends(verify_admin_token)):
+    # student = pending_students.find_one({"roll_no": roll_no})
+    student = pending_students.find_one({"roll_no": {"$regex": f"^{roll_no}$", "$options": "i"}})
+
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     pending_students.delete_one({"roll_no": roll_no})
@@ -139,9 +149,11 @@ def reject_student(roll_no: str, token: str = Depends(verify_admin_token)):
 
 # same for teacher
 @router.post("/admin/approve/teacher/{employee_id}")
-def approve_teacher(employee_id: str, token: str = Depends(verify_admin_token)):
+def approve_teacher(employee_id: str, admin_payload: dict = Depends(verify_admin_token)):
     emp_id = employee_id.upper()
-    teacher = pending_teachers.find_one({"employee_id": emp_id})
+    # teacher = pending_teachers.find_one({"employee_id": emp_id})
+    teacher = pending_teachers.find_one({"employee_id": {"$regex": f"^{emp_id}$", "$options": "i"}})
+
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found")
     pending_teachers.delete_one({"employee_id": emp_id})
@@ -165,9 +177,11 @@ def approve_teacher(employee_id: str, token: str = Depends(verify_admin_token)):
     return {"message": "Teacher approved"}
 
 @router.post("/admin/reject/teacher/{employee_id}")
-def reject_teacher(employee_id: str, token: str = Depends(verify_admin_token)):
+def reject_teacher(employee_id: str, admin_payload: dict = Depends(verify_admin_token)):
     emp_id = employee_id.upper()
-    teacher = pending_teachers.find_one({"employee_id": emp_id})
+    # teacher = pending_teachers.find_one({"employee_id": emp_id})
+    teacher = pending_teachers.find_one({"employee_id": {"$regex": f"^{emp_id}$", "$options": "i"}})
+
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found")
     pending_teachers.delete_one({"employee_id": emp_id})
