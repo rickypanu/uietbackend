@@ -87,8 +87,8 @@ def mark_attendance(req: MarkAttendanceRequest):
     print("Teacher location:", teacher_lat, teacher_lng)
 
     distance = haversine_distance(req.lat, req.lng, teacher_lat, teacher_lng)
-    if distance > 100:
-        raise HTTPException(status_code=400, detail=f"Too far from teacher's location ({round(distance)} m > 100 m)")
+    # if distance > 100:
+    #     raise HTTPException(status_code=400, detail=f"Too far from teacher's location ({round(distance)} m > 100 m)")
 
     # ✅ recent device check
     from datetime import timedelta
@@ -98,8 +98,8 @@ def mark_attendance(req: MarkAttendanceRequest):
         "visitor_id": visitor_id,
         "marked_at": {"$gte": fifty_min_ago}
     })
-    if recent:
-        raise HTTPException(status_code=400, detail="Attendance already marked from this device recently (within 50 minutes)")
+    # if recent:
+    #     raise HTTPException(status_code=400, detail="Attendance already marked from this device recently (within 50 minutes)")
 
     attendance.insert_one({
         "roll_no": roll_no,
