@@ -211,3 +211,27 @@ def get_student_profile(roll_no: str):
         "roll_no": student.get("roll_no")
         # add more fields if needed
     }
+
+@router.get("/teacher/active-otps/{employee_id}")
+def get_active_otps(employee_id: str):
+    now_utc = datetime.utcnow().replace(tzinfo=pytz.utc)
+    
+    active = list(otps.find({
+        "teacher_id": employee_id.upper(),
+        "end_time": {"$gt": now_utc}
+    }).sort("end_time", -1))
+
+    result = []
+    for o in active:
+        end_time_utc = o["end_time"]
+        if end_time_utc.tzinfo is None:
+            end_time_utc = end_time_utc.replace(tzinfo=pytz.utc)
+        end_time_ist = end_time_utc.astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
+
+        result.append({
+            "otp": o["otp"],
+            "subject": o["subject"],
+            "end_time": end_time_ist
+        })
+
+    return result

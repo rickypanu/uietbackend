@@ -102,7 +102,8 @@ def view_attendance(employee_id: str):
             "student_name": r.get("student_name"),
             "roll_no": r.get("roll_no"),
             "subject": r.get("subject"),
-            "marked_at": marked_at_ist
+            "marked_at": marked_at_ist,
+            "otp": r.get("otp") 
         })
 
     return result
@@ -159,3 +160,30 @@ def get_teacher_profile(employee_id: str):
         "full_name": teacher.get("full_name"),
         "email": teacher.get("email"),      
     }
+
+@router.get("/teacher/todays-otps/{employee_id}")
+def get_todays_otps(employee_id: str):
+    now_ist = datetime.now(IST)
+    start_of_day_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_day_utc = start_of_day_ist.astimezone(pytz.utc)
+
+    otps_today = list(otps.find({
+        "teacher_id": employee_id.upper(),
+        "start_time": {"$gte": start_of_day_utc}
+    }).sort("start_time", -1))
+
+    result = []
+    for o in otps_today:
+        start_time_utc = o["start_time"]
+        if start_time_utc.tzinfo is None:
+            start_time_utc = start_time_utc.replace(tzinfo=pytz.utc)
+        start_time_ist = start_time_utc.astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
+
+        result.append({
+            "otp": o["otp"],
+            "subject": o["subject"],
+            "start_time": start_time_ist,
+            "end_time": o["end_time"].astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
+        })
+
+    return result
