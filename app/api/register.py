@@ -14,6 +14,8 @@ def register_student(student: StudentRegister):
     student_data['dob'] = student_data['dob'].isoformat()  # convert to string
 
     roll_no = student_data['roll_no']
+    phone = student_data['phone']
+    email = student_data['email']
 
     # Check in all collections if roll_no already exists
     if (
@@ -22,6 +24,21 @@ def register_student(student: StudentRegister):
         rejected_students.find_one({"roll_no": roll_no})
     ):
         raise HTTPException(status_code=400, detail="Roll number already registered or request pending/rejected.")
+
+
+    if (
+        pending_students.find_one({"phone": phone}) or
+        approved_students.find_one({"phone": phone}) or
+        rejected_students.find_one({"phone": phone})
+    ):
+        raise HTTPException(status_code=400, detail="Phone number already registered or request pending/rejected.")
+
+    if (
+        pending_students.find_one({"email": email}) or
+        approved_students.find_one({"email": email}) or
+        rejected_students.find_one({"email": email})
+    ):
+        raise HTTPException(status_code=400, detail="Email already registered or request pending/rejected.")
 
     pending_students.insert_one(student_data)
     return {"message": "Registration request submitted"}
