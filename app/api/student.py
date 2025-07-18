@@ -42,8 +42,8 @@ def mark_attendance(req: MarkAttendanceRequest):
     visitor_id = req.visitorId
 
     SUBJECTS_LOWER = [s.lower() for s in SUBJECTS]
-    if subject not in SUBJECTS_LOWER:
-        raise HTTPException(status_code=400, detail="Invalid subject")
+    # if subject not in SUBJECTS_LOWER:
+    #     raise HTTPException(status_code=400, detail="Invalid subject")
 
     student = approved_students.find_one({"roll_no": roll_no})
     if not student:
