@@ -8,55 +8,97 @@ from app.db.database import (
 
 router = APIRouter()
 
+def check_existing_user(field_name: str, value: str, collections: list):
+    for collection, status in collections:
+        if collection.find_one({field_name: value}):
+            return status
+    return None
+
 @router.post("/register/student")
 def register_student(student: StudentRegister):
     student_data = student.dict()
-    student_data['dob'] = student_data['dob'].isoformat()  # convert to string
+    student_data['dob'] = student_data['dob'].isoformat()
 
-    roll_no = student_data['roll_no']
-    phone = student_data['phone']
-    email = student_data['email']
+    checks = [
+        ('roll_no', student_data['roll_no']),
+        ('phone', student_data['phone']),
+        ('email', student_data['email'])
+    ]
 
-    # Check in all collections if roll_no already exists
-    if (
-        pending_students.find_one({"roll_no": roll_no}) or
-        approved_students.find_one({"roll_no": roll_no}) or
-        rejected_students.find_one({"roll_no": roll_no})
-    ):
-        raise HTTPException(status_code=400, detail="Roll number already registered or request pending/rejected.")
+    collections = [
+        (pending_students, "pending"),
+        (approved_students, "approved"),
+        (rejected_students, "rejected")
+    ]
 
-
-    if (
-        pending_students.find_one({"phone": phone}) or
-        approved_students.find_one({"phone": phone}) or
-        rejected_students.find_one({"phone": phone})
-    ):
-        raise HTTPException(status_code=400, detail="Phone number already registered or request pending/rejected.")
-
-    if (
-        pending_students.find_one({"email": email}) or
-        approved_students.find_one({"email": email}) or
-        rejected_students.find_one({"email": email})
-    ):
-        raise HTTPException(status_code=400, detail="Email already registered or request pending/rejected.")
+    for field, value in checks:
+        status = check_existing_user(field, value, collections)
+        if status == "pending":
+            raise HTTPException(
+                status_code=400,
+                detail=f"A registration request with this {field.replace('_', ' ')} is already pending. Please await verification."
+            )
+        elif status == "approved":
+            raise HTTPException(
+                status_code=400,
+                detail=f"This {field.replace('_', ' ')} has already been approved. Please log in using your credentials."
+            )
+        elif status == "rejected":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Registration using this {field.replace('_', ' ')} was previously rejected. Kindly contact the administrator for assistance."
+            )
 
     pending_students.insert_one(student_data)
-    return {"message": "Registration request submitted"}
+    return {
+        "message": f"Registration request submitted successfully for {student_data['full_name']} (Roll No: {student_data['roll_no']}). Please await verification."
+    }
+
 
 @router.post("/register/teacher")
 def register_teacher(teacher: TeacherRegister):
     teacher_data = teacher.dict()
-    teacher_data['dob'] = teacher_data['dob'].isoformat()
+    teacher_data["dob"] = teacher_data["dob"].isoformat()
 
-    employee_id = teacher_data['employee_id']
+    employee_id = teacher_data["employee_id"]
+    email = teacher_data["email"]
+    phone = teacher_data["phone"]
 
-    # Check in all collections if employee_id already exists
+    # Check for duplicate employee_id
     if (
         pending_teachers.find_one({"employee_id": employee_id}) or
         approved_teachers.find_one({"employee_id": employee_id}) or
         rejected_teachers.find_one({"employee_id": employee_id})
     ):
-        raise HTTPException(status_code=400, detail="Employee ID already registered or request pending/rejected.")
+        raise HTTPException(
+            status_code=400,
+            detail="An account with this Employee ID already exists or has a pending/rejected registration."
+        )
 
+    # Check for duplicate email
+    if (
+        pending_teachers.find_one({"email": email}) or
+        approved_teachers.find_one({"email": email}) or
+        rejected_teachers.find_one({"email": email})
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="This email address is already registered or has a pending/rejected registration."
+        )
+
+    # Check for duplicate phone number
+    if (
+        pending_teachers.find_one({"phone": phone}) or
+        approved_teachers.find_one({"phone": phone}) or
+        rejected_teachers.find_one({"phone": phone})
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="This phone number is already registered or has a pending/rejected registration."
+        )
+
+    # Insert registration request
     pending_teachers.insert_one(teacher_data)
-    return {"message": "Registration request submitted"}
+    return {
+        "message": f"Registration request submitted successfully for {teacher_data['full_name']} (Employee ID: {employee_id}). Please await verification."
+    }

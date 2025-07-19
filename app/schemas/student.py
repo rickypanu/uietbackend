@@ -1,5 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator, constr
-from typing import Annotated
+from pydantic import BaseModel, EmailStr, field_validator
 from datetime import date
 import re
 
@@ -10,26 +9,27 @@ class StudentRegister(BaseModel):
     dob: date
     gender: str
     address: str
-    roll_no: constr(pattern=r'^\d+$')
+    roll_no: str  # Use plain string, not constr
     department: str
-    course: str
+    branch: str
     semester: int
     section: str
 
-    @field_validator('phone')
+    @field_validator("roll_no")
+    @classmethod
+    def validate_roll_no(cls, v: str) -> str:
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("Roll number must be exactly 6 digits.")
+        return v
+
+    @field_validator("phone")
     @classmethod
     def validate_phone(cls, v: str) -> str:
-        # Remove +, -, and spaces
-        cleaned = re.sub(r'[+\-\s]', '', v)
-
-        # Remove leading '91' or '0'
-        if cleaned.startswith('91'):
+        cleaned = re.sub(r"[+\-\s]", "", v)
+        if cleaned.startswith("91"):
             cleaned = cleaned[2:]
-        elif cleaned.startswith('0'):
+        elif cleaned.startswith("0"):
             cleaned = cleaned[1:]
-
-        # Must be exactly 10 digits now
-        if not re.fullmatch(r'\d{10}', cleaned):
-            raise ValueError('Phone number must contain exactly 10 digits after removing prefix')
-
+        if not re.fullmatch(r"\d{10}", cleaned):
+            raise ValueError("Phone number must contain exactly 10 digits after removing prefix.")
         return cleaned
