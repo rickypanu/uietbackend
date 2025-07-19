@@ -39,7 +39,7 @@ def get_subjects(branch: str, semester: str):
 
 @router.post("/teacher/generate-otp")
 def generate_otp_route(data: GenerateOtpRequest):
-    print("DATA RECEIVED:", data.dict())
+    # print("DATA RECEIVED:", data.dict())
     course = data.course.upper()
     branch = data.branch.upper()
     semester = data.semester
@@ -52,12 +52,6 @@ def generate_otp_route(data: GenerateOtpRequest):
     ):
         raise HTTPException(status_code=400, detail="Invalid subject for given course/branch/semester")
 
-    # if (
-    # data.branch not in SUBJECTS or
-    # data.semester not in SUBJECTS[data.branch] or
-    # data.subject not in SUBJECTS[data.branch][data.semester]
-    # ):
-    #     raise HTTPException(status_code=400, detail="Invalid subject for given branch/semester")
 
     teacher = approved_teachers.find_one({"employee_id": data.employee_id.upper()})
     if not teacher:
