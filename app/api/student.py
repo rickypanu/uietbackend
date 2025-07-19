@@ -205,6 +205,7 @@ def get_student_profile(roll_no: str):
         "full_name": student.get("full_name"),
         "email": student.get("email"),
         "department": student.get("department"),
+        "course": student.get("course"),
         "branch": student.get("branch"),
         "semester": student.get("semester"),
         "section": student.get("section"),
