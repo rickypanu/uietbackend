@@ -1,6 +1,11 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from datetime import date
 import re
+from enum import Enum
+
+class Course(str, Enum):
+    BE = "BE"
+    ME = "ME"
 
 class StudentRegister(BaseModel):
     full_name: str
@@ -11,6 +16,7 @@ class StudentRegister(BaseModel):
     address: str
     roll_no: str  # Use plain string, not constr
     department: str
+    course: str
     branch: str
     semester: int
     section: str
