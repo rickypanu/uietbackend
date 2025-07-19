@@ -18,6 +18,7 @@ URL = os.getenv("url")
 
 
 SUBJECTS = {
+    "BE":{ 
     "CSE": {
         "1": ["Calculus", "Physics", "Professional Communication","Workshop" , "Programming Fundamentals", "UHV"],
         "2": ["Basic Electrical and Electronics Engineering", "Applied Chemistry", "Engineering Graphics", "OOPs", "Differential Equations and Transforms"],
@@ -48,7 +49,29 @@ SUBJECTS = {
         "7": [""],
         "8": [""],
     },
+},
+"ME": {
+    "CSE": {
+      "1": ["Advanced Algorithms", "Machine Learning", "Research Methodology"],
+      "2": ["Advanced DBMS", "Data Mining", "Cloud Computing"],
+      "3": ["Thesis Phase I", "Seminar"],
+      "4": ["Thesis Phase II"]
+    },
+    "ECE": {
+      "1": ["Advanced Signal Processing", "VLSI Design", "Research Methodology"],
+      "2": ["Wireless Communication", "Embedded Systems", "Advanced Communication Systems"],
+      "3": ["Thesis Phase I", "Seminar"],
+      "4": ["Thesis Phase II"]
+    },
+    "MECH": {
+      "1": ["Advanced Thermodynamics", "Finite Element Methods", "Research Methodology"],
+      "2": ["Computer-Aided Design", "Mechatronics", "Advanced Manufacturing"],
+      "3": ["Thesis Phase I", "Seminar"],
+      "4": ["Thesis Phase II"]
+    }
+  }
 }
+
 
 
 

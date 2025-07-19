@@ -13,6 +13,7 @@ import pytz
 
 class GenerateOtpRequest(BaseModel):
     employee_id: str
+    course: str 
     branch: str
     semester: str
     subject: str
@@ -38,12 +39,25 @@ def get_subjects(branch: str, semester: str):
 
 @router.post("/teacher/generate-otp")
 def generate_otp_route(data: GenerateOtpRequest):
+    print("DATA RECEIVED:", data.dict())
+    course = data.course.upper()
+    branch = data.branch.upper()
+    semester = data.semester
+
     if (
-    data.branch not in SUBJECTS or
-    data.semester not in SUBJECTS[data.branch] or
-    data.subject not in SUBJECTS[data.branch][data.semester]
+        course not in SUBJECTS or
+        branch not in SUBJECTS[course] or
+        semester not in SUBJECTS[course][branch] or
+        data.subject not in SUBJECTS[course][branch][semester]
     ):
-        raise HTTPException(status_code=400, detail="Invalid subject for given branch/semester")
+        raise HTTPException(status_code=400, detail="Invalid subject for given course/branch/semester")
+
+    # if (
+    # data.branch not in SUBJECTS or
+    # data.semester not in SUBJECTS[data.branch] or
+    # data.subject not in SUBJECTS[data.branch][data.semester]
+    # ):
+    #     raise HTTPException(status_code=400, detail="Invalid subject for given branch/semester")
 
     teacher = approved_teachers.find_one({"employee_id": data.employee_id.upper()})
     if not teacher:
@@ -58,6 +72,7 @@ def generate_otp_route(data: GenerateOtpRequest):
     otps.insert_one({
     "otp": otp,
     "teacher_id": data.employee_id.upper(),
+    "course": data.course,
     "branch": data.branch,
     "semester": data.semester,
     "subject": data.subject,
@@ -71,6 +86,7 @@ def generate_otp_route(data: GenerateOtpRequest):
     end_time_ist = end_time_utc.astimezone(IST)
     return {
         "otp": otp,
+        "course": course,
         "subject": data.subject,
         "branch": data.branch,
         "semester": data.semester,
@@ -187,3 +203,19 @@ def get_todays_otps(employee_id: str):
         })
 
     return result
+
+@router.get("/teacher/subjects/{course}/{branch}/{semester}")
+def get_subjects(course: str, branch: str, semester: str):
+    course = course.upper()
+    branch = branch.upper()
+    semester = semester
+
+    if course not in SUBJECTS:
+        raise HTTPException(status_code=404, detail="Course not found")
+    if branch not in SUBJECTS[course]:
+        raise HTTPException(status_code=404, detail="Branch not found in this course")
+    if semester not in SUBJECTS[course][branch]:
+        raise HTTPException(status_code=404, detail="Semester not found in this branch")
+    
+    return SUBJECTS[course][branch][semester]
+
