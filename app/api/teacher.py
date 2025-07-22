@@ -1,5 +1,5 @@
 # app/api/teacher.py
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, HTTPException
 from datetime import datetime, timedelta
 from app.db.database import otps, attendance, approved_teachers, approved_students
 from app.core.config import SUBJECTS
@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from io import StringIO
 import csv
 import pytz
-
+import base64
 
 class GenerateOtpRequest(BaseModel):
     employee_id: str
@@ -168,7 +168,14 @@ def get_teacher_profile(employee_id: str):
     # return only required fields (never return sensitive info)
     return {
         "full_name": teacher.get("full_name"),
-        "email": teacher.get("email"),      
+        "email": teacher.get("email"),
+        "phone": teacher.get("phone"),
+        "dob": teacher.get("dob"),
+        "gender": teacher.get("gender"),
+        "address": teacher.get("address"),
+        "employee_id": teacher.get("employee_id"),
+        "subject": teacher.get("subject"),
+        "photo": teacher.get("photo")
     }
 
 @router.get("/teacher/todays-otps/{employee_id}")
@@ -212,4 +219,27 @@ def get_subjects(course: str, branch: str, semester: str):
         raise HTTPException(status_code=404, detail="Semester not found in this branch")
     
     return SUBJECTS[course][branch][semester]
+
+
+
+@router.post("/teacher/profile/upload-photo/{employee_id}")
+async def upload_teacher_photo(employee_id: str, file: UploadFile = File(...)):
+    employee_id = employee_id.upper()
+    teacher = approved_teachers.find_one({"employee_id": employee_id})
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    
+
+    # Convert image file to base64 string
+    content = await file.read()
+    encoded_str = base64.b64encode(content).decode("utf-8")
+    
+    # Update teacher profile
+    approved_teachers.update_one(
+        {"employee_id": employee_id},
+        {"$set": {"photo": encoded_str}}
+    )
+
+    return {"message": "Photo uploaded successfully"}
+
 
