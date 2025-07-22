@@ -1,5 +1,5 @@
 # app/api/student.py
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from datetime import datetime
 from app.db.database import otps, attendance, approved_students
 from app.core.config import SUBJECTS
@@ -10,6 +10,7 @@ import csv
 import pytz
 import math
 from typing import Optional
+import base64
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     R = 6371000  # meters
@@ -205,11 +206,14 @@ def get_student_profile(roll_no: str):
         "full_name": student.get("full_name"),
         "email": student.get("email"),
         "department": student.get("department"),
+        "dob": student.get("dob"),
         "course": student.get("course"),
         "branch": student.get("branch"),
         "semester": student.get("semester"),
         "section": student.get("section"),
-        "roll_no": student.get("roll_no")
+        "roll_no": student.get("roll_no"),
+        "photo": student.get("photo")
+        
         # add more fields if needed
     }
 
@@ -236,3 +240,25 @@ def get_active_otps(employee_id: str):
         })
 
     return result
+
+@router.post("/student/profile/upload-photo/{roll_no}")
+async def upload_student_photo(roll_no: str, file: UploadFile = File(...)):
+    roll_no = roll_no.upper()
+    student = approved_students.find_one({"roll_no": roll_no})
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+
+    # Convert image file to base64 string
+    content = await file.read()
+    encoded_str = base64.b64encode(content).decode("utf-8")
+    
+    # Update student profile
+    approved_students.update_one(
+        {"roll_no": roll_no},
+        {"$set": {"photo": encoded_str}}
+    )
+
+    return {"message": "Photo uploaded successfully"}
+
+
