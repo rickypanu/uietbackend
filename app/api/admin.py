@@ -104,15 +104,21 @@ def approve_student(roll_no: str, admin_payload: dict = Depends(verify_admin_tok
     email = student["email"]
     subject = "Your account has been approved! 🎉"
     message = f"""
-    Hi {name},
-    Congratulations! Your student account has been approved on our College Attendance Management System.
-    You can now log in and:
-    ✅ Mark your attendance using OTP
-    ✅ View your attendance history
-    ✅ Stay updated with class activities
-    If you have any questions, feel free to reach out to our support team.
-    Welcome aboard!
-    - College Attendance Team
+    Dear {name},
+
+    We are pleased to inform you that your student account has been successfully approved on the College Attendance Management System.
+
+    You may now log in to your account and make use of the following features:
+    - Mark your attendance using the provided OTP system  
+    - View your attendance history at any time  
+    - Stay informed about class schedules and important updates
+
+    Should you have any questions or require assistance, please do not hesitate to contact the system administrator or visit the relevant department office.
+
+    We welcome you to the platform and wish you a successful academic journey.
+
+    Best regards,  
+    College Attendance Team
     """
 
     send_email(email, subject, message)
@@ -131,15 +137,16 @@ def reject_student(roll_no: str, admin_payload: dict = Depends(verify_admin_toke
     email = student["email"]
     subject = "Update on Your Student Account Registration"
     message = f"""
-    Hi {name},
+    Dear {name},
+
     Thank you for registering on our College Attendance Management System.
-    After reviewing your application, we regret to inform you that your student account has not been approved at this time.
-    If you believe this decision was made in error or if you’d like to provide additional details for reconsideration, please feel free to contact our support team.
+    We regret to inform you that your registration could not be approved at this time due to certain issues or discrepancies identified during the verification process.
+    If you believe this is an error or if you require further clarification, please contact the college administration or visit the department office responsible for student registration.
 
-    We appreciate your interest and understanding.
+    We appreciate your understanding and cooperation.
 
-    Welcome aboard!
-    - College Attendance Team
+    Best regards,  
+    College Attendance Team
     """
 
     send_email(email, subject, message)
@@ -161,14 +168,20 @@ def approve_teacher(employee_id: str, admin_payload: dict = Depends(verify_admin
     subject = "Your Teacher Account Has Been Approved!"
     message = f"""
     Dear {name},
-    Congratulations! Your teacher account has been approved on our College Attendance Management System.
-    You can now log in and:
-    ✅ Mark your attendance using OTP
-    ✅ View your attendance history
-    ✅ Stay updated with class activities
-    If you have any questions, feel free to reach out to our support team.
-    Welcome aboard!
-    - College Attendance Team
+
+    We are pleased to inform you that your teacher account has been successfully approved on the College Attendance Management System.
+
+    You may now log in to your account and access the following features:
+    - Generate and manage OTP-based attendance  
+    - View your attendance history  
+    - Stay informed about class activities and updates
+
+    If you have any questions or require assistance, please do not hesitate to contact the system administrator or support team.
+
+    Welcome aboard, and thank you for being a part of our academic community.
+
+    Best regards,  
+    College Attendance Team
     """
 
     send_email(email, subject, message)
@@ -189,14 +202,18 @@ def reject_teacher(employee_id: str, admin_payload: dict = Depends(verify_admin_
     subject = "Update on Your Teacher Account Registration"
     message = f"""
     Dear {name},
-    Thank you for registering on our College Attendance Management System.
-    After reviewing your application, we regret to inform you that your teacher account has not been approved at this time.
-    If you believe this decision was made in error or you would like to provide additional information, please feel free to contact our support team.
 
-    We appreciate your interest in our system.
+    Thank you for registering on our College Attendance Management System.
+
+    We regret to inform you that your registration could not be approved at this time due to certain issues or discrepancies identified during the verification process.
+
+    If you believe this is an error or if you require further clarification, please contact the college administration or visit the department office responsible for teacher registration.
+
+    We appreciate your understanding and cooperation.
 
     Best regards,  
-    - College Attendance Team
+    College Attendance Team
+
     """
 
     send_email(email, subject, message)
