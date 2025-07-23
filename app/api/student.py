@@ -11,6 +11,7 @@ import pytz
 import math
 from typing import Optional
 import base64
+from datetime import date
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     R = 6371000  # meters
@@ -34,6 +35,10 @@ class MarkAttendanceRequest(BaseModel):
     lat: Optional[float]
     lng: Optional[float]
 
+
+class ProfileUpdate(BaseModel):
+    semester: Optional[int]
+    dob: Optional[date]  # Expecting ISO format from frontend (e.g., "2002-04-15")
 
 @router.post("/student/markAttendance")
 def mark_attendance(req: MarkAttendanceRequest):
@@ -262,3 +267,48 @@ async def upload_student_photo(roll_no: str, file: UploadFile = File(...)):
     return {"message": "Photo uploaded successfully"}
 
 
+# @router.patch("/student/profile/update-semester/{roll_no}")
+# async def update_student_semester(roll_no: str, update: Update):
+#     roll_no = roll_no.upper()
+#     student = approved_students.find_one({"roll_no": roll_no})
+    
+#     if not student:
+#         raise HTTPException(status_code=404, detail="Student not found")
+
+#     # Optional validation: restrict to 1–8
+#     if update.semester not in range(1, 9):
+#         raise HTTPException(status_code=400, detail="Invalid semester")
+
+#     approved_students.update_one(
+#         {"roll_no": roll_no},
+#         {"$set": {"semester": update.semester}}
+#     )
+    
+#     return {"message": "Semester updated successfully"}
+
+@router.patch("/student/profile/update/{roll_no}")
+async def update_student_profile(roll_no: str, update: ProfileUpdate):
+    roll_no = roll_no.upper()
+    student = approved_students.find_one({"roll_no": roll_no})
+    
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    update_fields = {}
+    if update.semester is not None:
+        if update.semester not in range(1, 9):
+            raise HTTPException(status_code=400, detail="Semester must be between 1 and 8")
+        update_fields["semester"] = update.semester
+
+    if update.dob is not None:
+        update_fields["dob"] = update.dob.isoformat()
+
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    approved_students.update_one(
+        {"roll_no": roll_no},
+        {"$set": update_fields}
+    )
+
+    return {"message": "Profile updated successfully"}
