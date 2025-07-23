@@ -6,8 +6,4 @@ email-validator
 uvicorn
 pytz
 python-jose
-<<<<<<< HEAD
 python-multipart
-=======
-
->>>>>>> e25ad814f0179dc0712b2188820e307a6f85020e
