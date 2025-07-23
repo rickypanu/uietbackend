@@ -78,7 +78,7 @@ def verify_admin_token(token: str = Depends(oauth2_scheme)):
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("sub").lower() != ADMIN_ID.lower():
             raise HTTPException(status_code=403, detail="Invalid admin token")
-        return payload  # ✅ This was missing
+        return payload  # This was missing
     except Exception:
         raise HTTPException(status_code=403, detail="Invalid admin token")
 
@@ -114,7 +114,6 @@ def approve_student(roll_no: str, admin_payload: dict = Depends(verify_admin_tok
     - Stay informed about class schedules and important updates
 
     Should you have any questions or require assistance, please do not hesitate to contact the system administrator or visit the relevant department office.
-
     We welcome you to the platform and wish you a successful academic journey.
 
     Best regards,  
