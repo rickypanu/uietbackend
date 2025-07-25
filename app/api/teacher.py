@@ -10,6 +10,10 @@ from io import StringIO
 import csv
 import pytz
 import base64
+from app.db.database import notifications
+from fastapi import Form
+from bson import ObjectId
+
 
 class GenerateOtpRequest(BaseModel):
     employee_id: str
@@ -20,6 +24,14 @@ class GenerateOtpRequest(BaseModel):
     duration_minutes: int
     lat: float
     lng: float
+
+class NotificationRequest(BaseModel):
+    employee_id: str
+    message: str
+    branch: str
+    section: str
+    semester: str
+    expiry_time: datetime
 
 
 router = APIRouter()
@@ -243,3 +255,66 @@ async def upload_teacher_photo(employee_id: str, file: UploadFile = File(...)):
     return {"message": "Photo uploaded successfully"}
 
 
+
+@router.post("/teacher/send-notification")
+async def send_notification(
+    employee_id: str = Form(...),
+    message: str = Form(...),
+    branch: str = Form(...),
+    section: str = Form(...),
+    semester: str = Form(...),
+    expiry_time: str = Form(...),  # ISO format expected
+    file: UploadFile = File(None)
+):
+    teacher = approved_teachers.find_one({"employee_id": employee_id.upper()})
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    file_url = None
+    if file:
+        content = await file.read()
+        filename = f"{employee_id}_{datetime.utcnow().timestamp()}_{file.filename}"
+        filepath = f"uploads/notifications/{filename}"
+        with open(filepath, "wb") as f:
+            f.write(content)
+        file_url = f"/files/notifications/{filename}"  # Serve via StaticFiles
+    
+    notifications.insert_one({
+        "sender_id": employee_id.upper(),
+        "message": message,
+        "file_url": file_url,
+        "target_branch": branch.upper(),
+        "target_section": section.upper(),
+        "target_semester": semester,
+        "timestamp": datetime.utcnow(),
+        "expiry_time": datetime.fromisoformat(expiry_time)
+    })
+
+    return {"message": "Notification sent successfully"}
+
+
+@router.get("/notifications/{employee_id}")
+async def get_teacher_notifications(employee_id: str):
+    cursor = notifications.find({"sender_id": employee_id}).sort("timestamp", -1)
+    result = []
+    async for doc in cursor:
+        doc["_id"] = str(doc["_id"])
+        if "file_path" in doc:
+            doc["file_url"] = f"/files/notifications/{doc['file_path']}"
+        result.append(doc)
+    return result
+
+
+
+
+@router.delete("/teacher/notifications/{notification_id}")
+async def delete_notification(notification_id: str, employee_id: str = Form(...)):
+    result = notifications.delete_one({
+        "_id": ObjectId(notification_id),
+        "sender_id": employee_id.upper()
+    })
+
+    if result.deleted_count == 1:
+        return {"message": "Notification deleted successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="Notification not found or unauthorized")

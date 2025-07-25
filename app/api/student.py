@@ -1,7 +1,7 @@
 # app/api/student.py
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from datetime import datetime
-from app.db.database import otps, attendance, approved_students
+from app.db.database import otps, attendance, approved_students, approved_teachers, notifications
 from app.core.config import SUBJECTS
 from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
@@ -312,3 +312,26 @@ async def update_student_profile(roll_no: str, update: ProfileUpdate):
     )
 
     return {"message": "Profile updated successfully"}
+
+@router.get("/student/notifications/{branch}/{section}/{semester}")
+def get_notifications(branch: str, section: str, semester: str):
+    now = datetime.utcnow()
+    notifs = list(notifications.find({
+        "target_branch": branch.upper(),
+        "target_section": section.upper(),
+        "target_semester": semester,
+        "expiry_time": {"$gte": now}
+    }).sort("timestamp", -1))
+
+    results = []
+    for n in notifs:
+        teacher = approved_teachers.find_one({"employee_id": n["sender_id"]})
+        results.append({
+            "message": n["message"],
+            "file_url": n.get("file_url"),
+            "timestamp": n["timestamp"],
+            "expiry_time": n["expiry_time"],
+            "teacher_name": teacher.get("full_name", "Unknown") if teacher else "Unknown"
+        })
+
+    return results

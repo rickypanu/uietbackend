@@ -13,5 +13,8 @@ pending_teachers = db["pending_teachers"]
 approved_teachers = db["approved_teachers"]
 rejected_teachers = db["rejected_teachers"]
 
+notifications = db["notifications"]
+
+
 otps = db["otps"]
 attendance = db["attendance"]
