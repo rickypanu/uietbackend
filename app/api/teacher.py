@@ -13,6 +13,8 @@ import base64
 from app.db.database import notifications
 from fastapi import Form
 from bson import ObjectId
+import os
+from typing import List
 
 
 class GenerateOtpRequest(BaseModel):
@@ -293,28 +295,53 @@ async def send_notification(
     return {"message": "Notification sent successfully"}
 
 
-@router.get("/notifications/{employee_id}")
-async def get_teacher_notifications(employee_id: str):
-    cursor = notifications.find({"sender_id": employee_id}).sort("timestamp", -1)
-    result = []
-    async for doc in cursor:
-        doc["_id"] = str(doc["_id"])
-        if "file_path" in doc:
-            doc["file_url"] = f"/files/notifications/{doc['file_path']}"
-        result.append(doc)
-    return result
+@router.get("/teacher/notifications/{employee_id}")
+def get_sent_notifications(employee_id: str):
+    employee_id = employee_id.upper()
+    teacher = approved_teachers.find_one({"employee_id": employee_id})
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    results = []
+    for notif in notifications.find({"sender_id": employee_id}).sort("timestamp", -1):
+        notif["_id"] = str(notif["_id"])  # Convert ObjectId to string
+        notif["expiry_time"] = notif["expiry_time"].isoformat()
+        notif["timestamp"] = notif["timestamp"].isoformat()
+        results.append(notif)
+
+    return results
 
 
 
+@router.post("/teacher/notifications/delete")
+def delete_notification(
+    notification_id: str = Form(...),
+    employee_id: str = Form(...)
+):
+    employee_id = employee_id.upper()
 
-@router.delete("/teacher/notifications/{notification_id}")
-async def delete_notification(notification_id: str, employee_id: str = Form(...)):
-    result = notifications.delete_one({
+    # Check if teacher exists
+    teacher = approved_teachers.find_one({"employee_id": employee_id})
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    # Find the notification
+    notif = notifications.find_one({
         "_id": ObjectId(notification_id),
-        "sender_id": employee_id.upper()
+        "sender_id": employee_id
     })
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification not found or not authorized")
 
-    if result.deleted_count == 1:
-        return {"message": "Notification deleted successfully"}
-    else:
-        raise HTTPException(status_code=404, detail="Notification not found or unauthorized")
+    # Delete the attached file if any
+    if notif.get("file_url"):
+        filepath = notif["file_url"].replace("/files", "uploads")
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+    # Delete the notification document
+    notifications.delete_one({"_id": ObjectId(notification_id)})
+
+    return {"message": "Notification deleted successfully"}
+
+
