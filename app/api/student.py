@@ -105,7 +105,9 @@ def mark_attendance(req: MarkAttendanceRequest):
         "marked_at": {"$gte": fifty_min_ago}
     })
     if recent:
-        raise HTTPException(status_code=400, detail="Attendance already marked from this device recently (within 50 minutes)")
+        raise HTTPException(status_code=400, detail="Attendance already marked from this device recently")
+        # raise HTTPException(status_code=400, detail="Attendance already marked from this device recently (within 50 minutes)")
+
 
     attendance.insert_one({
         "roll_no": roll_no,
