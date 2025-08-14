@@ -66,6 +66,7 @@ def mark_attendance(req: MarkAttendanceRequest):
 
     if start_time.tzinfo is None:
         start_time = start_time.replace(tzinfo=pytz.utc)
+        
     if end_time.tzinfo is None:
         end_time = end_time.replace(tzinfo=pytz.utc)
 
@@ -100,7 +101,7 @@ def mark_attendance(req: MarkAttendanceRequest):
     from datetime import timedelta
     fifty_min_ago = now_utc - timedelta(minutes=50)
     recent = attendance.find_one({
-        "roll_no": roll_no,
+        # "roll_no": roll_no,
         "visitor_id": visitor_id,
         "marked_at": {"$gte": fifty_min_ago}
     })
