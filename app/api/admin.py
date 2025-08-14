@@ -98,30 +98,37 @@ def approve_student(roll_no: str, admin_payload: dict = Depends(verify_admin_tok
 
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+
+    # Move from pending to approved
     pending_students.delete_one({"roll_no": roll_no})
     approved_students.insert_one(student)
+
+    # Email details
     name = student["full_name"]
     email = student["email"]
-    subject = "Your account has been approved! 🎉"
+    subject = "Your Student Account Has Been Approved!"
+
     message = f"""
     Dear {name},
 
-    We are pleased to inform you that your student account has been successfully approved on the College Attendance Management System.
+    We are pleased to inform you that your student account has been successfully **approved** on the *College Attendance Management System*.
 
-    You may now log in to your account and make use of the following features:
-    - Mark your attendance using the provided OTP system  
-    - View your attendance history at any time  
-    - Stay informed about class schedules and important updates
+    You can now log in to your account and start using the following features:
+    • Mark your attendance using the secure OTP system  
+    • View and track your attendance history  
+    • Stay informed about schedules, notices, and updates  
 
-    Should you have any questions or require assistance, please do not hesitate to contact the system administrator or visit the relevant department office.
-    We welcome you to the platform and wish you a successful academic journey.
+    If you have any questions or need assistance, please contact the system administrator or your department office.
+
+    We warmly welcome you to the platform and wish you great success in your academic journey.
 
     Best regards,  
-    College Attendance Team
+    **College Attendance Management Team**
     """
 
     send_email(email, subject, message)
     return {"message": "Student approved"}
+
 
 @router.post("/admin/reject/student/{roll_no}")
 def reject_student(roll_no: str, admin_payload: dict = Depends(verify_admin_token)):
