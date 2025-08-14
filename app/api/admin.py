@@ -111,7 +111,7 @@ def approve_student(roll_no: str, admin_payload: dict = Depends(verify_admin_tok
     message = f"""
     Dear {name},
 
-    We are pleased to inform you that your student account has been successfully **approved** on the *College Attendance Management System*.
+    We are pleased to inform you that your student account has been successfully approved on the College Attendance Management System.
 
     You can now log in to your account and start using the following features:
     • Mark your attendance using the secure OTP system  
@@ -123,7 +123,7 @@ def approve_student(roll_no: str, admin_payload: dict = Depends(verify_admin_tok
     We warmly welcome you to the platform and wish you great success in your academic journey.
 
     Best regards,  
-    **College Attendance Management Team**
+    College Attendance Management Team
     """
 
     send_email(email, subject, message)
