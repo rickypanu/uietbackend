@@ -36,9 +36,14 @@ class MarkAttendanceRequest(BaseModel):
     lng: Optional[float]
 
 
+
 class ProfileUpdate(BaseModel):
-    semester: Optional[int]
-    dob: Optional[date]  # Expecting ISO format from frontend (e.g., "2002-04-15")
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    branch: Optional[str] = None
+    section: Optional[str] = None
+    semester: Optional[int] = None
+    dob: Optional[date] = None
 
 @router.post("/student/markAttendance")
 def mark_attendance(req: MarkAttendanceRequest):
@@ -270,24 +275,7 @@ async def upload_student_photo(roll_no: str, file: UploadFile = File(...)):
     return {"message": "Photo uploaded successfully"}
 
 
-# @router.patch("/student/profile/update-semester/{roll_no}")
-# async def update_student_semester(roll_no: str, update: Update):
-#     roll_no = roll_no.upper()
-#     student = approved_students.find_one({"roll_no": roll_no})
-    
-#     if not student:
-#         raise HTTPException(status_code=404, detail="Student not found")
 
-#     # Optional validation: restrict to 1–8
-#     if update.semester not in range(1, 9):
-#         raise HTTPException(status_code=400, detail="Invalid semester")
-
-#     approved_students.update_one(
-#         {"roll_no": roll_no},
-#         {"$set": {"semester": update.semester}}
-#     )
-    
-#     return {"message": "Semester updated successfully"}
 
 @router.patch("/student/profile/update/{roll_no}")
 async def update_student_profile(roll_no: str, update: ProfileUpdate):
@@ -298,6 +286,20 @@ async def update_student_profile(roll_no: str, update: ProfileUpdate):
         raise HTTPException(status_code=404, detail="Student not found")
 
     update_fields = {}
+
+    # Allow updating full_name, email, branch, section
+    if update.full_name is not None:
+        update_fields["full_name"] = update.full_name.strip()
+
+    if update.email is not None:
+        update_fields["email"] = update.email.strip().lower()
+
+    if update.branch is not None:
+        update_fields["branch"] = update.branch.strip()
+
+    if update.section is not None:
+        update_fields["section"] = update.section.strip().upper()
+
     if update.semester is not None:
         if update.semester not in range(1, 9):
             raise HTTPException(status_code=400, detail="Semester must be between 1 and 8")
@@ -315,6 +317,7 @@ async def update_student_profile(roll_no: str, update: ProfileUpdate):
     )
 
     return {"message": "Profile updated successfully"}
+
 
 @router.get("/student/notifications/{branch}/{section}/{semester}")
 def get_notifications(branch: str, section: str, semester: str):
