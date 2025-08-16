@@ -1,6 +1,5 @@
 # app/api/student.py
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from datetime import datetime
+from fastapi import APIRouter, HTTPException, UploadFile, File 
 from app.db.database import otps, attendance, approved_students, approved_teachers, notifications
 from app.core.config import SUBJECTS
 from pydantic import BaseModel
@@ -11,7 +10,7 @@ import pytz
 import math
 from typing import Optional
 import base64
-from datetime import date
+from datetime import date, timedelta, datetime
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     R = 6371000  # meters
@@ -332,10 +331,12 @@ def get_notifications(branch: str, section: str, semester: str):
     results = []
     for n in notifs:
         teacher = approved_teachers.find_one({"employee_id": n["sender_id"]})
+        ist_timestamp = n["timestamp"] + timedelta(hours=5, minutes=30)
         results.append({
             "message": n["message"],
             "file_url": n.get("file_url"),
-            "timestamp": n["timestamp"],
+            # "timestamp": n["timestamp"],
+            "timestamp": ist_timestamp,
             "expiry_time": n["expiry_time"],
             "teacher_name": teacher.get("full_name", "Unknown") if teacher else "Unknown"
         })
