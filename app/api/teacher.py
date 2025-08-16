@@ -15,6 +15,9 @@ from fastapi import Form
 from bson import ObjectId
 import os
 from typing import List
+from zoneinfo import ZoneInfo
+
+
 
 
 class GenerateOtpRequest(BaseModel):
@@ -40,6 +43,7 @@ router = APIRouter()
 
 # Timezone definitions
 IST = pytz.timezone('Asia/Kolkata')
+INDT = ZoneInfo("Asia/Kolkata")
 
 @router.get("/teacher/subjects/{branch}/{semester}")
 def get_subjects(branch: str, semester: str):
@@ -288,28 +292,13 @@ async def send_notification(
         "target_branch": branch.upper(),
         "target_section": section.upper(),
         "target_semester": semester,
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(INDT),
         "expiry_time": datetime.fromisoformat(expiry_time)
     })
 
     return {"message": "Notification sent successfully"}
 
 
-# @router.get("/teacher/notifications/{employee_id}")
-# def get_sent_notifications(employee_id: str):
-#     employee_id = employee_id.upper()
-#     teacher = approved_teachers.find_one({"employee_id": employee_id})
-#     if not teacher:
-#         raise HTTPException(status_code=404, detail="Teacher not found")
-
-#     results = []
-#     for notif in notifications.find({"sender_id": employee_id}).sort("timestamp", -1):
-#         notif["_id"] = str(notif["_id"])  # Convert ObjectId to string
-#         notif["expiry_time"] = notif["expiry_time"].isoformat()
-#         notif["timestamp"] = notif["timestamp"].isoformat()
-#         results.append(notif)
-
-#     return results
 
 @router.get("/teacher/notifications/{employee_id}")
 def get_sent_notifications(employee_id: str):
