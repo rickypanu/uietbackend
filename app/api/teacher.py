@@ -295,6 +295,22 @@ async def send_notification(
     return {"message": "Notification sent successfully"}
 
 
+# @router.get("/teacher/notifications/{employee_id}")
+# def get_sent_notifications(employee_id: str):
+#     employee_id = employee_id.upper()
+#     teacher = approved_teachers.find_one({"employee_id": employee_id})
+#     if not teacher:
+#         raise HTTPException(status_code=404, detail="Teacher not found")
+
+#     results = []
+#     for notif in notifications.find({"sender_id": employee_id}).sort("timestamp", -1):
+#         notif["_id"] = str(notif["_id"])  # Convert ObjectId to string
+#         notif["expiry_time"] = notif["expiry_time"].isoformat()
+#         notif["timestamp"] = notif["timestamp"].isoformat()
+#         results.append(notif)
+
+#     return results
+
 @router.get("/teacher/notifications/{employee_id}")
 def get_sent_notifications(employee_id: str):
     employee_id = employee_id.upper()
