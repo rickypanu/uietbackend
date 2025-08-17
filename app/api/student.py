@@ -115,15 +115,28 @@ def mark_attendance(req: MarkAttendanceRequest):
 
 
     attendance.insert_one({
-        "roll_no": roll_no,
-        "student_name": student["full_name"],
-        "subject": subject,
-        "otp": otp,
-        "visitor_id": visitor_id,
-        "marked_at": now_utc,
-        "lat": req.lat,
-        "lng": req.lng
-    })
+    "roll_no": roll_no,
+    "student_name": student["full_name"],
+    "branch": student.get("branch"),
+    "section": student.get("section"),
+    "subject": subject,
+    "otp": otp,
+    "visitor_id": visitor_id,
+    "marked_at": now_utc,
+    "lat": req.lat,
+    "lng": req.lng
+})
+
+    # attendance.insert_one({
+    #     "roll_no": roll_no,
+    #     "student_name": student["full_name"],
+    #     "subject": subject,
+    #     "otp": otp,
+    #     "visitor_id": visitor_id,
+    #     "marked_at": now_utc,
+    #     "lat": req.lat,
+    #     "lng": req.lng
+    # })
 
     return {"message": "Attendance marked successfully"}
 
