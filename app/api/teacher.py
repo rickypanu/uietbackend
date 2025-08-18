@@ -130,6 +130,8 @@ def view_attendance(employee_id: str):
             "student_name": r.get("student_name"),
             "roll_no": r.get("roll_no"),
             "subject": r.get("subject"),
+            "branch": r.get("branch"),
+            "section": r.get("section"),
             "marked_at": marked_at_ist,
             "otp": r.get("otp") 
         })
