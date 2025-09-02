@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import datetime
 from bson import ObjectId
@@ -197,3 +197,26 @@ def get_class_register(
     }
 
 
+@router.delete("/{class_id}")
+def delete_class(class_id: str):
+    """
+    Delete a class by its ID.
+    Also optionally, you can delete related OTPs and attendance records.
+    """
+    # 1️⃣ Check if class exists
+    class_data = classes.find_one({"_id": class_id})
+    if not class_data:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    # 2️⃣ Delete the class
+    result = classes.delete_one({"_id": class_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to delete class")
+
+    # # 3️⃣ Optionally delete related OTPs
+    # otps.delete_many({"teacher_id": class_data["teacher_id"], "subject": class_data["subject"]})
+
+    # # 4️⃣ Optionally delete related attendance records
+    # attendance.delete_many({"otp": {"$in": [o["otp"] for o in otps.find({"teacher_id": class_data["teacher_id"], "subject": class_data["subject"]}, {"_id": 0, "otp": 1})]}})
+
+    return {"message": "Class and related records deleted successfully"}
