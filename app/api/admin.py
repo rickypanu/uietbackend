@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from app.core.config import ADMIN_ID, ADMIN_PASSWORD, ADMIN_EMAIL, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
 from app.db.database import (
     pending_students, approved_students, rejected_students,
-    pending_teachers, approved_teachers, rejected_teachers
+    pending_teachers, approved_teachers, rejected_teachers, notifications
 )
 from app.core.email_utils import send_email
 from datetime import datetime, timedelta
@@ -12,7 +12,9 @@ import random
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 import os
+
 router = APIRouter()
+
 
 # TEMPORARY: in-memory; use Redis/DB in production
 admin_otp_store = {}
@@ -249,3 +251,6 @@ def list_rejected_students():
 @router.get("/admin/list/rejected/teachers")
 def list_rejected_teachers():
     return list(rejected_teachers.find({}, {"_id": 0}))
+
+
+
