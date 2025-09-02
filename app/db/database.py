@@ -18,3 +18,4 @@ notifications = db["notifications"]
 
 otps = db["otps"]
 attendance = db["attendance"]
+classes = db["classes"]
