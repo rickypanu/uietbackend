@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from .api import admin, register, auth
-from app.api import teacher, student, subjects, classes, admin_notifications, student_notification
+from app.api import teacher, student, subjects, classes, admin_notifications, student_notification, attendance_analysis
 from app.core.config import URL
 
 app = FastAPI()
@@ -32,6 +32,7 @@ app.include_router(student.router)
 app.include_router(student_notification.router)
 app.include_router(subjects.router)
 app.include_router(classes.router)
+app.include_router(attendance_analysis.router)
 
 @app.get("/")
 def root():
