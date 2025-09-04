@@ -106,7 +106,7 @@ def mark_attendance(req: MarkAttendanceRequest):
     fifty_min_ago = now_utc - timedelta(minutes=50)
     recent = attendance.find_one({
         # "roll_no": roll_no,
-        "subject": subject,
+        # "subject": subject,
         "visitor_id": visitor_id,
         "marked_at": {"$gte": fifty_min_ago}
     })
