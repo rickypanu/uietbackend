@@ -4,7 +4,8 @@ from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
 from app.db.database import approved_students,otps,attendance
 from app.core.config import SUBJECTS
-
+from bson import ObjectId
+from datetime import datetime
 
 
 
@@ -31,43 +32,53 @@ def student_attendance_analysis(
     if program not in SUBJECTS or branch not in SUBJECTS[program] or semester not in SUBJECTS[program][branch]:
         raise HTTPException(status_code=400, detail="Subjects not defined for this branch/semester")
 
-    subjects = SUBJECTS[program][branch][semester]
+    # curriculum subjects (normalize to lowercase for DB queries)
+    subjects = [s.lower() for s in SUBJECTS[program][branch][semester]]
 
+    # if specific subject filter is provided
     if subject:
-        if subject not in subjects:
+        if subject.lower() not in subjects:
             raise HTTPException(status_code=400, detail=f"Subject '{subject}' not in student curriculum")
-        subjects = [subject]
+        subjects = [subject.lower()]
 
     start_date = datetime(year, month, 1)
-    if month == 12:
-        end_date = datetime(year + 1, 1, 1)
-    else:
-        end_date = datetime(year, month + 1, 1)
+    end_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
 
-    result = {sub: {"attended": 0, "total": 0, "percentage": 0} for sub in subjects}
+    # Initialize result
+    result = {s.upper(): {"attended": 0, "total": 0, "percentage": 0} for s in subjects}
 
-    # Count total classes
-    for otp_doc in otps.find({
-        "subject": {"$in": subjects},
-        "start_time": {"$gte": start_date, "$lt": end_date}
-    }):
-        sub = otp_doc["subject"]
-        if sub in result:
-            result[sub]["total"] += 1
+    # Count total classes (case-insensitive match)
+    otp_query = {
+        "start_time": {"$gte": start_date, "$lt": end_date},
+        "$or": [{"subject": {"$regex": f"^{s}$", "$options": "i"}} for s in subjects]
+    }
+    for otp_doc in otps.find(otp_query):
+        sub = otp_doc["subject"].lower()
+        if sub in subjects:
+            result[sub.upper()]["total"] += 1
 
-    # Count attended classes
-    for att_doc in attendance.find({
+    # Count attended classes (case-insensitive match)
+    att_query = {
         "roll_no": roll_no,
-        "subject": {"$in": subjects},
-        "marked_at": {"$gte": start_date, "$lt": end_date}
-    }):
-        sub = att_doc["subject"]
-        if sub in result:
-            result[sub]["attended"] += 1
+        "marked_at": {"$gte": start_date, "$lt": end_date},
+        "$or": [{"subject": {"$regex": f"^{s}$", "$options": "i"}} for s in subjects]
+    }
+    for att_doc in attendance.find(att_query):
+        sub = att_doc["subject"].lower()
+        if sub in subjects:
+            result[sub.upper()]["attended"] += 1
 
+    # Debug sample
+    att_sample = attendance.find_one({"roll_no": roll_no})
+    print("Sample attendance:", att_sample, type(att_sample.get("marked_at")))
+
+    # Totals
     total_classes = sum(stats["total"] for stats in result.values())
     total_attended = sum(stats["attended"] for stats in result.values())
+    print("total_attended", total_attended)
+    print("total class", total_classes)
 
+    # Percentages
     for stats in result.values():
         if stats["total"] > 0:
             stats["percentage"] = round((stats["attended"] / stats["total"]) * 100, 2)
@@ -79,7 +90,7 @@ def student_attendance_analysis(
         "branch": branch,
         "semester": semester,
         "month": f"{start_date.strftime('%B')} {year}",
-        "subject_filter": subject if subject else "All Subjects",
+        "subject_filter": subject.upper() if subject else "All Subjects",
         "overall": {
             "attended": total_attended,
             "total": total_classes,
