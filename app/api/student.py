@@ -102,29 +102,29 @@ def mark_attendance(req: MarkAttendanceRequest):
         raise HTTPException(status_code=400, detail=f"Too far from teacher's location ({round(distance)} m > 100 m)")
 
     # ✅ recent device check
-    # from datetime import timedelta
-    # fifty_min_ago = now_utc - timedelta(minutes=50)
-    # recent = attendance.find_one({
-    #     # "roll_no": roll_no,
-    #     "visitor_id": visitor_id,
-    #     "marked_at": {"$gte": fifty_min_ago}
-    # })
-    # if recent:
-    #     raise HTTPException(status_code=400, detail="Attendance already marked from this device recently")
-        
-    # Check recent attendance for same device AND same subject
     from datetime import timedelta
     fifty_min_ago = now_utc - timedelta(minutes=50)
     recent = attendance.find_one({
+        # "roll_no": roll_no,
         "visitor_id": visitor_id,
-        "subject": subject,  # only same subject
         "marked_at": {"$gte": fifty_min_ago}
     })
     if recent:
-        raise HTTPException(
-            status_code=400,
-            detail="Attendance already marked for this subject from this device recently"
-        )
+        raise HTTPException(status_code=400, detail="Attendance already marked from this device recently")
+        
+    # Check recent attendance for same device AND same subject
+    # from datetime import timedelta
+    # fifty_min_ago = now_utc - timedelta(minutes=50)
+    # recent = attendance.find_one({
+    #     "visitor_id": visitor_id,
+    #     "subject": subject,  # only same subject
+    #     "marked_at": {"$gte": fifty_min_ago}
+    # })
+    # if recent:
+    #     raise HTTPException(
+    #         status_code=400,
+    #         detail="Attendance already marked for this subject from this device recently"
+    #     )
 
         attendance.insert_one({
         "roll_no": roll_no,
