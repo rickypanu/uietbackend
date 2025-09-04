@@ -98,3 +98,90 @@ def student_attendance_analysis(
         },
         "subjects": result
     }
+
+@router.get("/attendance-target/{roll_no}")
+def attendance_target(
+    roll_no: str,
+    subject: str,
+    target_percentage: float,
+    from_date: str = Query(..., description="Start date in YYYY-MM-DD"),
+    to_date: str = Query(None, description="End date in YYYY-MM-DD (default: today)"),
+):
+    roll_no = str(roll_no)
+
+    # 1. Get student info
+    student = approved_students.find_one({"roll_no": roll_no})
+    if not student:
+        raise HTTPException(status_code=404, detail=f"Student with roll_no {roll_no} not found")
+
+    program = "BE"
+    branch = student.get("branch")
+    semester = str(student.get("semester"))
+
+    if program not in SUBJECTS or branch not in SUBJECTS[program] or semester not in SUBJECTS[program][branch]:
+        raise HTTPException(status_code=400, detail="Subjects not defined for this branch/semester")
+
+    subjects = [s.lower() for s in SUBJECTS[program][branch][semester]]
+
+    if subject.lower() not in subjects:
+        raise HTTPException(status_code=400, detail=f"Subject '{subject}' not in student curriculum")
+
+    subject_key = subject.lower()
+    subject_name = subject_key.upper()
+
+    # ⏳ Convert dates
+    try:
+        start_date = datetime.strptime(from_date, "%Y-%m-%d")
+        if to_date:
+            end_date = datetime.strptime(to_date, "%Y-%m-%d")
+        else:
+            end_date = datetime.today()  # ✅ default to today
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    if start_date > end_date:
+        raise HTTPException(status_code=400, detail="from_date cannot be after to_date")
+
+    # 📌 Total classes in range
+    total_classes = otps.count_documents({
+        "subject": {"$regex": f"^{subject_key}$", "$options": "i"},
+        "start_time": {"$gte": start_date, "$lte": end_date}
+    })
+
+    # 📌 Attended classes in range
+    attended_classes = attendance.count_documents({
+        "roll_no": roll_no,
+        "subject": {"$regex": f"^{subject_key}$", "$options": "i"},
+        "marked_at": {"$gte": start_date, "$lte": end_date}
+    })
+
+    current_percentage = round((attended_classes / total_classes) * 100, 2) if total_classes > 0 else 0
+
+    if current_percentage >= target_percentage:
+        return {
+            "roll_no": roll_no,
+            "subject": subject_name,
+            "date_range": f"{from_date} → {end_date.strftime('%Y-%m-%d')}",
+            "attended": attended_classes,
+            "total": total_classes,
+            "current_percentage": current_percentage,
+            "target_percentage": target_percentage,
+            "needed_classes": 0,
+            "message": f"✅ You already meet or exceed {target_percentage}% attendance in {subject_name}."
+        }
+
+    # Formula: (attended + x) / (total + x) >= target%
+    required = (target_percentage * total_classes - 100 * attended_classes) / (100 - target_percentage)
+    required_classes = max(0, int(required) + (0 if required.is_integer() else 1))
+
+    return {
+        "roll_no": roll_no,
+        "subject": subject_name,
+        "date_range": f"{from_date} → {end_date.strftime('%Y-%m-%d')}",
+        "attended": attended_classes,
+        "total": total_classes,
+        "current_percentage": current_percentage,
+        "target_percentage": target_percentage,
+        "needed_classes": required_classes,
+        "message": f"📘 You need to attend {required_classes} more classes in {subject_name} (without bunking) to reach {target_percentage}%."
+    }
