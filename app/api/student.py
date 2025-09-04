@@ -102,19 +102,52 @@ def mark_attendance(req: MarkAttendanceRequest):
         raise HTTPException(status_code=400, detail=f"Too far from teacher's location ({round(distance)} m > 100 m)")
 
     # ✅ recent device check
-    from datetime import timedelta
-    fifty_min_ago = now_utc - timedelta(minutes=50)
-    recent = attendance.find_one({
-        # "roll_no": roll_no,
-        # "subject": subject,
-        "visitor_id": visitor_id,
-        "marked_at": {"$gte": fifty_min_ago}
-    })
-    if recent:
-        raise HTTPException(status_code=400, detail="Attendance already marked from this device recently")
+    # from datetime import timedelta
+    # fifty_min_ago = now_utc - timedelta(minutes=50)
+    # recent = attendance.find_one({
+    #     # "roll_no": roll_no,
+    #     # "subject": subject,
+    #     "visitor_id": visitor_id,
+    #     "marked_at": {"$gte": fifty_min_ago}
+    # })
+    # if recent:
+    #     raise HTTPException(status_code=400, detail="Attendance already marked from this device recently")
         
 
-        attendance.insert_one({
+    #     attendance.insert_one({
+    #     "roll_no": roll_no,
+    #     "student_name": student["full_name"],
+    #     "branch": student.get("branch"),
+    #     "section": student.get("section"),
+    #     "subject": subject,
+    #     "otp": otp,
+    #     "visitor_id": visitor_id,
+    #     "marked_at": now_utc,
+    #     "lat": req.lat,
+    #     "lng": req.lng
+    # })
+
+    # return {"message": "Attendance marked successfully"}
+
+    # ✅ recent device + subject-specific check
+    from datetime import timedelta
+    fifty_min_ago = now_utc - timedelta(minutes=50)
+
+    # Check only for same device AND same subject
+    recent = attendance.find_one({
+        "visitor_id": visitor_id,
+        "subject": subject,  # same subject only
+        "marked_at": {"$gte": fifty_min_ago}
+    })
+
+    if recent:
+        raise HTTPException(
+            status_code=400,
+            detail="Attendance already marked for this subject from this device within 50 minutes"
+        )
+
+    # ✅ Insert attendance (outside the if)
+    attendance.insert_one({
         "roll_no": roll_no,
         "student_name": student["full_name"],
         "branch": student.get("branch"),
