@@ -17,7 +17,7 @@ class TeacherRegister(BaseModel):
     @classmethod
     def validate_employee_id(cls, v: str) -> str:
         if not v.isdigit() or len(v) != 6:
-            raise ValueError("Emoloyee Id must be exactly 6 digits.")
+            raise ValueError("Employee Id must be exactly 6 digits.")
         return v
 
 
