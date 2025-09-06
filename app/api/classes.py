@@ -16,6 +16,7 @@ router = APIRouter(
 class ClassCreate(BaseModel):
     teacher_id: str
     department: str
+    course: str
     branch: str
     section: str
     semester: int
@@ -26,6 +27,7 @@ class ClassResponse(BaseModel):
     id: str
     teacher_id: str
     department: str
+    course: str
     branch: str
     section: str
     semester: int
@@ -48,6 +50,7 @@ def create_class(class_data: ClassCreate):
         "_id": class_id,
         "teacher_id": class_data.teacher_id,
         "department": class_data.department,
+        "course": class_data.course,
         "branch": class_data.branch,
         "section": class_data.section,
         "semester": class_data.semester,
@@ -66,6 +69,27 @@ def create_class(class_data: ClassCreate):
     }
 
 
+# @router.get("/list/{teacher_id}", response_model=List[ClassResponse])
+# def list_classes(teacher_id: str):
+#     """
+#     List all classes created by a teacher
+#     """
+#     result = list(classes.find({"teacher_id": teacher_id}))
+#     return [
+#         {
+#             "id": str(c["_id"]),
+#             "teacher_id": c["teacher_id"],
+#             "department": c["department"],
+#             "course": c["course"],
+#             "branch": c["branch"],
+#             "section": c["section"],
+#             "semester": c["semester"],
+#             "subject": c["subject"],
+#             "created_at": c["created_at"]
+#         }
+#         for c in result
+#     ]
+
 @router.get("/list/{teacher_id}", response_model=List[ClassResponse])
 def list_classes(teacher_id: str):
     """
@@ -74,14 +98,15 @@ def list_classes(teacher_id: str):
     result = list(classes.find({"teacher_id": teacher_id}))
     return [
         {
-            "id": str(c["_id"]),
-            "teacher_id": c["teacher_id"],
-            "department": c["department"],
-            "branch": c["branch"],
-            "section": c["section"],
-            "semester": c["semester"],
-            "subject": c["subject"],
-            "created_at": c["created_at"]
+            "id": str(c.get("_id")),
+            "teacher_id": c.get("teacher_id", ""),
+            "department": c.get("department", ""),
+            "course": c.get("course", ""),      # <-- safe
+            "branch": c.get("branch", ""),
+            "section": c.get("section", ""),
+            "semester": c.get("semester", ""),
+            "subject": c.get("subject", ""),
+            "created_at": c.get("created_at", None),
         }
         for c in result
     ]
@@ -105,6 +130,7 @@ def get_class_register(
     students = list(
         approved_students.find(
             {
+                "course": class_data["course"],
                 "branch": class_data["branch"],
                 "section": class_data["section"],
                 "semester": class_data["semester"]
@@ -187,6 +213,7 @@ def get_class_register(
     return {
         "class_info": {
             "department":class_data["department"],
+            "course":class_data["course"],
             "branch": class_data["branch"],
             "semester": class_data["semester"],
             "section": class_data["section"],
