@@ -12,8 +12,17 @@ class TeacherRegister(BaseModel):
     employee_id: str
     subject: str
 
-    @field_validator('phone')
+
+    @field_validator("employee_id")
     @classmethod
+    def validate_employee_id(cls, v: str) -> str:
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError("Emoloyee Id must be exactly 6 digits.")
+        return v
+
+
+    @field_validator('phone')
+    @classmethod   
     def validate_phone(cls, v: str) -> str:
         # Remove +, -, and spaces
         cleaned = re.sub(r'[+\-\s]', '', v)
