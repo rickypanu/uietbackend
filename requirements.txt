@@ -7,3 +7,6 @@ uvicorn
 pytz
 python-jose
 python-multipart
+pandas 
+openpyxl 
+xlrd
