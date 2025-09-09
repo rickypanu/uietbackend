@@ -74,9 +74,30 @@ async def bulk_register_students(file: UploadFile = File(...)):
                         raise Exception("skip insert")
 
                 # Insert into pending
+                # student_data = row.to_dict()
+                # student_data["dob"] = str(student_data.get("dob", ""))
+                # approved_students.insert_one(student_data)
+
+                # For Students
                 student_data = row.to_dict()
-                student_data["dob"] = str(student_data.get("dob", ""))
+
+                # Rename "name" column to "full_name"
+                if "name" in student_data:
+                    student_data["full_name"] = str(student_data.pop("name", "")).strip()
+
+                # Format DOB as YYYY-MM-DD only
+                dob_val = student_data.get("dob", "")
+
+                if pd.notna(dob_val) and dob_val != "":
+                    try:
+                        student_data["dob"] = pd.to_datetime(dob_val).strftime("%Y-%m-%d")
+                    except Exception:
+                        student_data["dob"] = str(dob_val)
+                else:
+                    student_data["dob"] = ""
+
                 approved_students.insert_one(student_data)
+
 
                 results.append({
                     "Roll No": roll_no,
@@ -144,8 +165,26 @@ async def bulk_register_teachers(file: UploadFile = File(...)):
                         raise Exception("skip insert")
 
                 # Insert into pending
+                # teacher_data = row.to_dict()
+                # teacher_data["dob"] = str(teacher_data.get("dob", ""))
+                # approved_teachers.insert_one(teacher_data)
+
                 teacher_data = row.to_dict()
-                teacher_data["dob"] = str(teacher_data.get("dob", ""))
+
+                # Rename name → full_name
+                if "name" in teacher_data:
+                    teacher_data["full_name"] = str(teacher_data.pop("name", "")).strip()
+
+                # Format DOB as YYYY-MM-DD only
+                dob_val = teacher_data.get("dob", "")
+                if pd.notna(dob_val) and dob_val != "":
+                    try:
+                        teacher_data["dob"] = pd.to_datetime(dob_val).strftime("%Y-%m-%d")
+                    except Exception:
+                        teacher_data["dob"] = str(dob_val)
+                else:
+                    teacher_data["dob"] = ""
+
                 approved_teachers.insert_one(teacher_data)
 
                 results.append({
