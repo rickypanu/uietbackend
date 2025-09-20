@@ -29,6 +29,7 @@ class GenerateOtpRequest(BaseModel):
     duration_minutes: int
     lat: float
     lng: float
+    mode: str
 
 class NotificationRequest(BaseModel):
     employee_id: str
@@ -90,7 +91,8 @@ def generate_otp_route(data: GenerateOtpRequest):
     "subject": data.subject,
     "start_time": now_utc,
     "end_time": end_time_utc,
-    "location": {"lat": data.lat, "lng": data.lng}
+    "location": {"lat": data.lat, "lng": data.lng},
+    "mode": data.mode.lower()
 })
 
 
@@ -103,6 +105,7 @@ def generate_otp_route(data: GenerateOtpRequest):
         "branch": data.branch,
         "semester": data.semester,
         "valid_till": end_time_ist.strftime("%Y-%m-%d %H:%M:%S"),
+        "mode": data.mode.lower(),
     }
 
 @router.get("/teacher/view-attendance/{employee_id}")
