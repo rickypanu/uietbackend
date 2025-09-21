@@ -29,6 +29,7 @@ class GenerateOtpRequest(BaseModel):
     duration_minutes: int
     lat: float
     lng: float
+    mode: str 
 
 class NotificationRequest(BaseModel):
     employee_id: str
@@ -91,6 +92,7 @@ def generate_otp_route(data: GenerateOtpRequest):
     "start_time": now_utc,
     "end_time": end_time_utc,
     "location": {"lat": data.lat, "lng": data.lng},
+    "mode": data.mode,
 
 })
 
