@@ -225,10 +225,42 @@ def get_todays_otps(employee_id: str):
             "subject": o["subject"],
             "start_time": start_time_ist,
             "end_time": o["end_time"].astimezone(IST).strftime("%Y-%m-%d %H:%M:%S"),
-            "mode": o['mode']
+            "mode": o.get("mode", "otp")
         })
 
     return result
+
+@router.get("/teacher/active-otps/{employee_id}")
+def get_active_otps(employee_id: str):
+    now_utc = datetime.utcnow().replace(tzinfo=pytz.utc)
+
+    active = list(otps.find({
+        "teacher_id": employee_id.upper(),
+        "end_time": {"$gte": now_utc}
+    }).sort("start_time", -1))
+
+    result = []
+    for o in active:
+        start_time_utc = o.get("start_time")
+        if start_time_utc and start_time_utc.tzinfo is None:
+            start_time_utc = start_time_utc.replace(tzinfo=pytz.utc)
+        start_time_ist = start_time_utc.astimezone(IST).isoformat() if start_time_utc else None
+
+        end_time_utc = o.get("end_time")
+        if end_time_utc and end_time_utc.tzinfo is None:
+            end_time_utc = end_time_utc.replace(tzinfo=pytz.utc)
+        end_time_ist = end_time_utc.astimezone(IST).isoformat() if end_time_utc else None
+
+        result.append({
+            "otp": o.get("otp"),
+            "subject": o.get("subject"),
+            "start_time": start_time_ist,
+            "end_time": end_time_ist,
+            "mode": o.get("mode", "otp")   # <-- always include mode
+        })
+
+    return result
+
 
 @router.get("/teacher/subjects/{course}/{branch}/{semester}")
 def get_subjects(course: str, branch: str, semester: str):
