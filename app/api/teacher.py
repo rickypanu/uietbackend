@@ -106,6 +106,7 @@ def generate_otp_route(data: GenerateOtpRequest):
         "branch": data.branch,
         "semester": data.semester,
         "valid_till": end_time_ist.strftime("%Y-%m-%d %H:%M:%S"),
+        "mode": data.mode,
     }
 
 @router.get("/teacher/view-attendance/{employee_id}")
@@ -223,7 +224,8 @@ def get_todays_otps(employee_id: str):
             "otp": o["otp"],
             "subject": o["subject"],
             "start_time": start_time_ist,
-            "end_time": o["end_time"].astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
+            "end_time": o["end_time"].astimezone(IST).strftime("%Y-%m-%d %H:%M:%S"),
+            "mode": o['mode']
         })
 
     return result
